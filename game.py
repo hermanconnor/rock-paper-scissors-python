@@ -13,25 +13,23 @@ BEATS: Dict[str, str] = {
     "paper": "rock"
 }
 
-INPUT_MAP: Dict[str, str] = {
+INPUT_MAP: dict[str, str] = {
     "r": "rock", "rock": "rock",
     "p": "paper", "paper": "paper",
-    "s": "scissors", "scissors": "scissors"
+    "s": "scissors", "scissors": "scissors",
+    "q": "quit", "quit": "quit", "exit": "quit"
 }
 
 
-def get_best_of_n():
-    """
-    Prompts the player to choose best-of-N format.
-    Returns the number of rounds needed to win.
-    """
+def get_best_of_n() -> int | None:
     while True:
         print(f"\n{Fore.CYAN}Choose game mode: ")
-        print(f"{Fore.CYAN}1. Endless Mode (play until you quit)")
-        print(f"{Fore.CYAN}2. Best of N (first to win N/2 + 1 rounds)")
-
+        print(f"1. Endless Mode\n2. Best of N")
         choice = input(
-            f"\n{Fore.YELLOW}Enter 1 or 2: {Style.RESET_ALL}").strip()
+            f"\n{Fore.YELLOW}Enter 1, 2, or 'q' to quit: {Style.RESET_ALL}").strip().lower()
+
+        if choice in ["q", "quit", "exit"]:
+            return "QUIT_GAME"
 
         if choice == "1":
             return None
@@ -39,36 +37,30 @@ def get_best_of_n():
             while True:
                 try:
                     n = int(input(
-                        f"{Fore.YELLOW}Enter odd number of rounds (e.g., 3, 5, 7): {Style.RESET_ALL}"))
+                        f"{Fore.YELLOW}Enter odd number of rounds (3, 5, 7...): {Style.RESET_ALL}"))
                     if n > 0 and n % 2 == 1:
-                        rounds_to_win = (n // 2) + 1
-                        print(
-                            f"{Fore.GREEN}First to win {rounds_to_win} rounds wins the match! {Style.RESET_ALL}")
-                        return rounds_to_win
-                    else:
-                        print(
-                            f"{Fore.RED}Please enter a positive odd number!{Style.RESET_ALL}")
+                        return (n // 2) + 1
+                    print(
+                        f"{Fore.RED}Please enter a positive ODD number.{Style.RESET_ALL}")
                 except ValueError:
                     print(
                         f"{Fore.RED}Invalid input! Please enter a number.{Style.RESET_ALL}")
         else:
-            print(f"{Fore.RED}Invalid choice! Please enter 1 or 2.{Style.RESET_ALL}")
+            print(f"{Fore.RED}Invalid choice!{Style.RESET_ALL}")
 
 
-def get_player_choice() -> (str | None):
-    """Prompts player for input and validates it against the INPUT_MAP."""
+def get_player_choice() -> str | None:
     while True:
-        prompt = f"\n{Fore.CYAN}Choose {', '.join(CHOICES)} (or r/p/s). Type 'q' to quit: {Style.RESET_ALL}"
+        prompt = f"\n{Fore.CYAN}Choose {', '.join(CHOICES)} (r/p/s) or 'q' to quit: {Style.RESET_ALL}"
         user_input = input(prompt).lower().strip()
 
-        if user_input in ["q", "quit", "exit"]:
+        mapped = INPUT_MAP.get(user_input)
+        if mapped == "quit":
             return None
+        if mapped:
+            return mapped
 
-        if user_input in INPUT_MAP:
-            return INPUT_MAP[user_input]
-
-        print(
-            f"{Fore.RED}Invalid input! Please use {', '.join(CHOICES)} or their initials.{Style.RESET_ALL}")
+        print(f"{Fore.RED}Invalid input!{Style.RESET_ALL}")
 
 
 def get_computer_choice() -> str:
@@ -99,45 +91,92 @@ def display_round_result(player: str, computer: str, winner: Literal['ties', 'pl
         print(f"{Fore.RED}{Style.BRIGHT}Computer wins! {computer.capitalize()} beats {player}{Style.RESET_ALL}")
 
 
-# def display_scoreboard(score: Dict[str, int], final: bool = False) -> None:
-#     """Prints the current or final score."""
-#     header = "FINAL SCORE" if final else "CURRENT SCORE"
-#     print(f"\n{'='*30}\n{header:^30}\n{'='*30}")
-#     print(
-#         f" Player: {score['player']} | Computer: {score['computer']} | Ties: {score['ties']}")
-#     print("="*30)
+def display_score(score: Dict[Literal['ties', 'player', 'computer'], int], rounds_to_win: int | None = None) -> None:
+    """
+    Displays the current score with color coding.
+    If rounds_to_win is set, shows progress toward winning the match.
+    """
+    print(f"\n{Fore.WHITE}{Style.BRIGHT}{'=' * 40}")
+    print(f"{Fore.CYAN}{Style.BRIGHT}SCOREBOARD")
+    print(f"{Fore.WHITE}{'=' * 40}{Style.RESET_ALL}")
+
+    # Color code based on who's winning
+    player_score = score['player']
+    computer_score = score['computer']
+    player_color = Fore.GREEN if player_score > computer_score else Fore.WHITE
+    computer_color = Fore.RED if computer_score > player_score else Fore.WHITE
+
+    print(f"{player_color}Player: {player_score}{Style.RESET_ALL}")
+    print(f"{computer_color}Computer: {computer_score}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Ties: {score['ties']}{Style.RESET_ALL}")
+
+    # If best-of-N mode, show progress
+    if rounds_to_win:
+        print(f"{Fore.CYAN}First to {rounds_to_win} wins!{Style.RESET_ALL}")
+
+    print(f"{Fore.WHITE}{'=' * 40}{Style.RESET_ALL}")
 
 
 def play_game() -> None:
-    print("Welcome to Rock, Paper, Scissors!")
+    print(f"{Fore.GREEN}{Style.BRIGHT}{'=' * 40}")
+    print(f"🎮 ROCK, PAPER, SCISSORS 🎮")
+    print(f"{'=' * 40}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Type 'quit' or 'q' to exit anytime{Style.RESET_ALL}")
 
+    # Get game mode
+    rounds_to_win = get_best_of_n()
+
+    if rounds_to_win == "QUIT_GAME":
+        print(f"\n{Fore.CYAN}{Style.BRIGHT}Exiting game. Goodbye!{Style.RESET_ALL}")
+        return
+
+    # Initialize score
     score = {"player": 0, "computer": 0, "ties": 0}
 
+    # Game loop
     while True:
+        # Get player choice
         player_choice = get_player_choice()
 
         if player_choice is None:
-            display_scoreboard(score, final=True)
-            print("Thanks for playing! Goodbye.")
+            print(
+                f"\n{Fore.CYAN}{Style.BRIGHT}Thanks for playing!{Style.RESET_ALL}")
+            display_score(score, rounds_to_win)
             break
 
+        # Get computer choice
         computer_choice = get_computer_choice()
+
+        # Determine winner
         winner = determine_winner(player_choice, computer_choice)
+
+        # Update score
         score[winner] += 1
 
-        # Display round result
-        print(
-            f"\nResult: {player_choice.upper()} vs {computer_choice.upper()}")
+        # Display result
+        display_round_result(player_choice, computer_choice, winner)
+        display_score(score, rounds_to_win)
 
-        if winner == 'ties':
-            print(">> It's a draw!")
+        # Check if someone won the match (best-of-N mode)
+        if rounds_to_win:
+            if score['player'] >= rounds_to_win:
+                print(
+                    f"\n{Fore.GREEN}{Style.BRIGHT}🏆 CONGRATULATIONS! YOU WON THE MATCH! 🏆{Style.RESET_ALL}")
+                break
+            elif score['computer'] >= rounds_to_win:
+                print(
+                    f"\n{Fore.RED}{Style.BRIGHT}💻 Computer won the match. Better luck next time!{Style.RESET_ALL}")
+                break
         else:
-            winning_choice = player_choice if winner == "player" else computer_choice
-            losing_choice = computer_choice if winner == 'player' else player_choice
-            print(
-                f">> {winner.capitalize()} wins! {winning_choice.capitalize()} beats {losing_choice}.")
+            # Endless mode - ask if player wants to continue
+            continue_game = input(
+                f"\n{Fore.YELLOW}Play again? (y/n): {Style.RESET_ALL}").lower().strip()
+            if continue_game not in ['y', 'yes']:
+                print(
+                    f"\n{Fore.CYAN}{Style.BRIGHT}Thanks for playing!{Style.RESET_ALL}")
+                display_score(score, rounds_to_win)
 
-        display_scoreboard(score)
+                break
 
 
 if __name__ == "__main__":
