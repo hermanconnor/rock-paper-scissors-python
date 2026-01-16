@@ -117,6 +117,30 @@ def display_score(score: Dict[Literal['ties', 'player', 'computer'], int], round
     print(f"{Fore.WHITE}{'=' * 40}{Style.RESET_ALL}")
 
 
+def update_statistics(stats, player_choice, winner):
+    """
+    Updates the statistics dictionary with the latest round data.
+
+    Args:
+        stats: Dictionary containing all statistics
+        player_choice: What the player chose this round
+        winner: Who won ('player', 'computer', or 'ties')
+    """
+    # Track total rounds
+    stats['total_rounds'] += 1
+
+    # Track choice frequency
+    stats['choices'][player_choice] += 1
+
+    # Update win streak
+    if winner == "player":
+        stats['current_streak'] += 1
+        stats['longest_streak'] = max(
+            stats['longest_streak'], stats['current_streak'])
+    else:
+        stats['current_streak'] = 0
+
+
 def play_game() -> None:
     print(f"{Fore.GREEN}{Style.BRIGHT}{'=' * 40}")
     print(f"🎮 ROCK, PAPER, SCISSORS 🎮")
@@ -175,7 +199,6 @@ def play_game() -> None:
                 print(
                     f"\n{Fore.CYAN}{Style.BRIGHT}Thanks for playing!{Style.RESET_ALL}")
                 display_score(score, rounds_to_win)
-
                 break
 
 
