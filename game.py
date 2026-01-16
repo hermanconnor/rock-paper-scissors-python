@@ -1,10 +1,13 @@
 import random
+import sys
+import time
 from typing import Literal, Dict, List
 from colorama import Fore, Style, init
 
 # Initialize colorama for cross-platform color support
 init(autoreset=True)
 
+# --- CONFIGURATION & ART ---
 CHOICES: List[str] = ["rock", "paper", "scissors"]
 
 BEATS: Dict[str, str] = {
@@ -20,6 +23,68 @@ INPUT_MAP: dict[str, str] = {
     "q": "quit", "quit": "quit", "exit": "quit"
 }
 
+ASCII_ART = {
+    "rock": """
+    _______
+---'    ____)
+       (_____)
+       (_____)
+       (____)
+---.__(___)
+""",
+    "paper": """
+      _______
+---'    ____)____
+           ______)
+          _______)
+         _______)
+---.__________)
+""",
+    "scissors": """
+    _______
+---'    ____)____
+           ______)
+        __________)
+       (____)
+---.__(___)
+"""
+}
+
+# --- ANIMATION UTILITIES ---
+
+
+def clear_line():
+    sys.stdout.write('\r')
+    sys.stdout.write(' ' * 80)
+    sys.stdout.write('\r')
+    sys.stdout.flush()
+
+
+def animate_reveal(player_choice: str, computer_choice: str):
+    # Countdown
+    countdown = ["Rock...", "Paper...", "Scissors...", "SHOOT! 🎯"]
+
+    for i, text in enumerate(countdown):
+        clear_line()
+        color = Fore.YELLOW if i < 3 else Fore.GREEN
+        sys.stdout.write(f"{color}{Style.BRIGHT}{text}{Style.RESET_ALL}")
+        sys.stdout.flush()
+        time.sleep(0.5)
+    print("\n")
+
+    # Display ASCII Art
+    player_lines = ASCII_ART[player_choice].strip().split('\n')
+    computer_lines = ASCII_ART[computer_choice].strip().split('\n')
+
+    print(f"{Fore.BLUE}{Style.BRIGHT}{'YOU':^25}{Style.RESET_ALL}       {Fore.MAGENTA}{Style.BRIGHT}{'COMPUTER':^25}{Style.RESET_ALL}")
+
+    for p_line, c_line in zip(player_lines, computer_lines):
+        print(f"{Fore.BLUE}{p_line:25}{Style.RESET_ALL}   {Fore.WHITE}VS{Style.RESET_ALL}   {Fore.MAGENTA}{c_line:25}{Style.RESET_ALL}")
+
+    print(f"\n{Fore.BLUE}{Style.BRIGHT}{player_choice.upper():^25}{Style.RESET_ALL}       {Fore.MAGENTA}{Style.BRIGHT}{computer_choice.upper():^25}{Style.RESET_ALL}\n")
+
+
+# --- GAME LOGIC ---
 
 def get_player_choice() -> str | None:
     while True:
@@ -104,6 +169,10 @@ def play_game() -> None:
             break
 
         computer_choice = get_computer_choice()
+
+        # Show the animation before showing the result
+        animate_reveal(player_choice, computer_choice)
+
         winner = determine_winner(player_choice, computer_choice)
 
         # Update score
