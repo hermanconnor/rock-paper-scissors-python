@@ -1,5 +1,5 @@
 import random
-from typing import Literal, Dict, List
+from typing import Literal, Dict, List, TypedDict
 from colorama import Fore, Back, Style, init
 
 # Initialize colorama for cross-platform color support
@@ -19,6 +19,19 @@ INPUT_MAP: dict[str, str] = {
     "s": "scissors", "scissors": "scissors",
     "q": "quit", "quit": "quit", "exit": "quit"
 }
+
+
+class ChoiceStats(TypedDict):
+    rock: int
+    paper: int
+    scissors: int
+
+
+class GameStats(TypedDict):
+    total_rounds: int
+    choices: ChoiceStats
+    current_streak: int
+    longest_streak: int
 
 
 def get_best_of_n() -> int | None:
@@ -117,7 +130,7 @@ def display_score(score: Dict[Literal['ties', 'player', 'computer'], int], round
     print(f"{Fore.WHITE}{'=' * 40}{Style.RESET_ALL}")
 
 
-def update_statistics(stats, player_choice, winner):
+def update_statistics(stats: GameStats, player_choice: Literal['rock', 'paper', 'scissors'], winner: Literal['player', 'computer', 'ties']) -> None:
     """
     Updates the statistics dictionary with the latest round data.
 
@@ -157,6 +170,14 @@ def play_game() -> None:
     # Initialize score
     score = {"player": 0, "computer": 0, "ties": 0}
 
+    # Initialize statistics
+    stats = {
+        'total_rounds': 0,
+        'choices': {'rock': 0, 'paper': 0, 'scissors': 0},
+        'current_streak': 0,
+        'longest_streak': 0
+    }
+
     # Game loop
     while True:
         # Get player choice
@@ -174,8 +195,9 @@ def play_game() -> None:
         # Determine winner
         winner = determine_winner(player_choice, computer_choice)
 
-        # Update score
+        # Update score and statistics
         score[winner] += 1
+        update_statistics(stats, player_choice, winner)
 
         # Display result
         display_round_result(player_choice, computer_choice, winner)
